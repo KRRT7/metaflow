@@ -474,9 +474,8 @@ def start(
         # be raised. For resume, since we ignore those options, we ignore the error.
         raise ctx.obj.delayed_config_exception
 
-    # Init all values in the flow mutators and then process them
-    for decorator in ctx.obj.flow._flow_mutators:
-        decorator.external_init()
+    # Process config decorators (this is the pre_mutate phase for both flow mutators and
+    # step mutators -- the mutate is called in init_step_decorators)
 
     new_cls = ctx.obj.flow._process_config_decorators(config_options)
     if new_cls:
@@ -561,8 +560,6 @@ def start(
     ctx.obj.monitor.start()
     _system_monitor.init_system_monitor(ctx.obj.flow.name, ctx.obj.monitor)
 
-    decorators._init(ctx.obj.flow)
-
     # It is important to initialize flow decorators early as some of the
     # things they provide may be used by some of the objects initialized after.
     decorators._init_flow_decorators(
@@ -624,7 +621,6 @@ def start(
             all_decospecs = []
         if all_decospecs:
             decorators._attach_decorators(ctx.obj.flow, all_decospecs)
-            decorators._init(ctx.obj.flow)
             # Regenerate graph if we attached more decorators
             ctx.obj.flow.__class__._init_graph()
             ctx.obj.graph = ctx.obj.flow._graph
